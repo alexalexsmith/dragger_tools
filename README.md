@@ -32,7 +32,7 @@ from dragger_tools.draggers import tween_dragger;default_tween_dragger.drag()
 ## Curve Value Dragger
 <img width="720" height="720" alt="curve_value_dragger" src="https://github.com/user-attachments/assets/27bd98fe-e8a3-4a8c-9ef8-7671a5520cb9" />
 
-change current attribute value to future or past value of the animation curve. Could also be descripbed as slidding the attribute value along the animation curve
+change current attribute value to future or past value of the animation curve. Could also be described as slidding the attribute value along the animation curve
 
 ```
 from dragger_tools.draggers import tween_dragger;curve_value_dragger.drag()
