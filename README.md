@@ -1,6 +1,7 @@
 # Maya Dragger Tools
 dragger tools for maya
-place the dragger_tools folder in your scripts folder and run the dragger tool with the below commands
+place the dragger_tools folder in your scripts folder and run the dragger tool with the below commands.
+The tools work by dragging the left mouse across the viewport. You can lock the drag value to avoid overshooting using the ctrl key and reduce the drag speed using the alt key.
 
 ## Tween Dragger
 <img width="720" height="720" alt="tween_dragger" src="https://github.com/user-attachments/assets/26f00c16-f5a1-44eb-9fae-506fecf1a2f2" />
