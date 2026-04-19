@@ -1,4 +1,4 @@
-# dragger_tools
+# Maya Dragger Tools
 dragger tools for maya
 place the dragger_tools folder in your scripts folder and run the dragger tool with the below commands
 
