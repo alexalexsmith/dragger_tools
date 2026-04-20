@@ -18,7 +18,7 @@ from dragger_tools.draggers import tween_dragger;tween_dragger.drag()
 lerp (ease) world position between previous and next keyframe time world positions. This function allows you to choose to exclude translation, rotation, and scale
 
 ```
-from dragger_tools.draggers import tween_dragger;world_space_tween_dragger.drag(translation=True, rotation=True, scale=True)
+from dragger_tools.draggers import world_space_tween_dragger;world_space_tween_dragger.drag(translation=True, rotation=True, scale=True)
 ```
 
 ## Default Tween Dragger
@@ -27,7 +27,7 @@ from dragger_tools.draggers import tween_dragger;world_space_tween_dragger.drag(
 lerp (ease) attributes between current value and default value
 
 ```
-from dragger_tools.draggers import tween_dragger;default_tween_dragger.drag()
+from dragger_tools.draggers import default_tween_dragger;default_tween_dragger.drag()
 ```
 
 ## Curve Value Dragger
@@ -36,7 +36,7 @@ from dragger_tools.draggers import tween_dragger;default_tween_dragger.drag()
 change current attribute value to future or past value of the animation curve. Could also be described as slidding the attribute value along the animation curve
 
 ```
-from dragger_tools.draggers import tween_dragger;curve_value_dragger.drag()
+from dragger_tools.draggers import curve_value_dragger;curve_value_dragger.drag()
 ```
 
 ## Lerp Snap Dragger
@@ -45,7 +45,7 @@ from dragger_tools.draggers import tween_dragger;curve_value_dragger.drag()
 Lerp objects towards the first selected object. This function allows you to choose to exclude translation, rotation, and scale
 
 ```
-from dragger_tools.draggers import tween_dragger;lerp_snap_dragger.drag(translation=True, rotation=True, scale=True)
+from dragger_tools.draggers import lerp_snap_dragger;lerp_snap_dragger.drag(translation=True, rotation=True, scale=True)
 ```
 
 ## Camera Depth Dragger
@@ -54,5 +54,5 @@ from dragger_tools.draggers import tween_dragger;lerp_snap_dragger.drag(translat
 Lerp objects towards the active camera. The active camera is decided based on the active model panel or the first viewport panel available
 
 ```
-from dragger_tools.draggers import tween_dragger;camera_depth_dragger.drag()
+from dragger_tools.draggers import camera_depth_dragger;camera_depth_dragger.drag()
 ```
