@@ -15,6 +15,7 @@ class Attribute(object):
         self.node, self.attribute = attribute_path.split(".")
         self.type = cmds.getAttr(attribute_path, type=True)
         self.value = cmds.getAttr(attribute_path)
+        self.fn_node = None
         self.m_attr_plug = None
         self.m_attribute = None
         self._init_m_attribute()
@@ -24,9 +25,22 @@ class Attribute(object):
         sel = om.MSelectionList()
         sel.add(self.node)
         mobj = sel.getDependNode(0)
-        fn_node = om.MFnDependencyNode(mobj)
-        self.m_attr_plug = fn_node.findPlug(self.attribute, False)
+        self.fn_node = om.MFnDependencyNode(mobj)
+        self.m_attr_plug = self.fn_node.findPlug(self.attribute, False)
         self.m_attribute = self.m_attr_plug.attribute()
+
+    def node_name(self):
+        """return the node name"""
+        return self.fn_node.name()
+
+    def attribute_name(self):
+        """return the attribute name"""
+        return self.m_attribute.name()
+
+    def attribute_path(self):
+        """return the attribute path"""
+        path = f"{self.node_name()}.{self.attribute_name()}"
+        return path
 
     def is_selected(self):
         """
@@ -46,12 +60,16 @@ class Attribute(object):
     def is_locked(self):
         return cmds.getAttr(self.attribute_path, lock=True)
 
-    def get_connections(self):
+    def get_source_connection(self):
         """
-        get a list of incoming connections
+        get source connection, if any
         """
-        # TODO: may need to filter out self in list
-        return cmds.listConnections(self.attribute_path, skipConversionNodes=True)
+        m_plug_source = self.m_attr_plug.source()
+        if m_plug_source.isNull:
+            return None
+        m_object_source_node = m_plug_source.node()
+        fn_source_node = om.MFnDependencyNode(m_object_source_node)
+        return fn_source_node.name()
 
     def get_default_value(self):
         """
@@ -71,7 +89,10 @@ class Attribute(object):
         get the current value
         :param float time: option to get the value a specified time
         """
-        return cmds.getAttr(self.attribute_path)
+        value = cmds.getAttr(self.attribute_path())
+        if time:
+            value = cmds.getAttr(self.attribute_path(), time=time)
+        return value
 
     def get_keyframes(self):
         """

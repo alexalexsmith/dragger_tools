@@ -2,10 +2,13 @@
 Curve value dragger
 """
 from maya import cmds
-from maya.api import OpenMaya
+from maya.api import OpenMaya, OpenMayaAnim
 
 from dragger_tools.utilities import maya_utils, math_utils, dragger_utils, attribute_utils
 from dragger_tools import ICONS
+
+
+ANIM_CURVE_TYPES = ["animCurveTU", "animCurveTA", "animCurveTL"]
 
 
 class CurveValueDragger(dragger_utils.Dragger):
@@ -40,17 +43,22 @@ class CurveValueDragger(dragger_utils.Dragger):
             if not attributes or len(attributes) == 0:
                 continue
 
-            self.nodes[node] = []
+            self.nodes[node] = {}
+
             for attribute in attributes:
-
-                previous_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="previous")
-                next_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="next")
-                if not previous_keyframe:
+                attribute_object = attribute_utils.Attribute(f"{node}.{attribute}")
+                source_connection = attribute_object.get_source_connection()
+                if not source_connection:
                     continue
-                if not next_keyframe:
+                if not cmds.nodeType(source_connection) in ANIM_CURVE_TYPES:
                     continue
+                buffer_curve = cmds.duplicate(source_connection)[0]
+                sel = OpenMaya.MSelectionList()
+                sel.add(buffer_curve)
+                new_obj = sel.getDependNode(0)
+                fn_curve = OpenMayaAnim.MFnAnimCurve(new_obj)
 
-                self.nodes[node].append(f"{node}.{attribute}")
+                self.nodes[node][f"{node}.{attribute}"] = fn_curve
 
     def press(self, *args, **kwargs):
         """
@@ -71,12 +79,26 @@ class CurveValueDragger(dragger_utils.Dragger):
         """
         Actions activated by left drag
         """
+
         self.time_drag = cmds.currentTime(query=True) + self.x
 
         for node in self.nodes:
             for attribute in self.nodes[node]:
-                value = cmds.getAttr(attribute, time=self.time_drag)
-                cmds.setAttr(attribute, value)
+                buffer_curve = self.nodes[node][attribute]
+                cmds.keyframe(
+                    attribute,
+                    time=(cmds.currentTime(query=True),),
+                    valueChange=buffer_curve.evaluate(OpenMaya.MTime(self.time_drag, OpenMaya.MTime.uiUnit()))
+                )
+
+    def release(self):
+        """release actions. clean up all data"""
+        for node in self.nodes:
+            for attribute in self.nodes[node]:
+                buffer_curve = self.nodes[node][attribute]
+                dg_mod = OpenMaya.MDGModifier()
+                dg_mod.deleteNode(buffer_curve.object())
+                dg_mod.doIt()  # There is no try
 
 
 def drag(*args, **kwargs):

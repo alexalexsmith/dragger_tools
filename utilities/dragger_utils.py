@@ -130,7 +130,7 @@ class Dragger(object):
             self.min_value = None
             self.max_value = None
 
-        # set drag speed based on alt key modifierr press state
+        # set drag speed based on alt key modifier press state
         if self.modifier == "other":
             self.multiplier = self.MIN_MULTIPLIER
         if not self.modifier == "other":
@@ -165,7 +165,8 @@ class Dragger(object):
         """
         defines what is displayed on the cursor label and how it looks when dragging
         """
-        self.cursor_label.setText(str(int(self.x * 100)))
+        label = f"{int(self.x * 100)}%"
+        self.cursor_label.setText(label)
         if int(self.x * 100) > 100 or int(self.x * 100) < 0:
             self.cursor_label.set_color("red")
         else:
@@ -175,7 +176,11 @@ class Dragger(object):
         """
         private release function
         """
-        self.release()
+        try:
+            self.release(*args, **kwargs)
+        except Exception as e:
+            if self.debug:
+                maya_utils.record_error(self.drag, e)
         cmds.undoInfo(closeChunk=True, chunkName=self.NAME)
         if self.cursor_label:
             self.cursor_label.close()
