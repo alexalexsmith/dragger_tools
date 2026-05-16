@@ -21,8 +21,6 @@ class CameraSpaceDragger(dragger_utils.Dragger):
 
     def __init__(self, *args, **kwargs):
         super(CameraSpaceDragger, self).__init__(*args, **kwargs)
-        self.key_display_curve = None
-        self.tween_display_curve = None
 
     def _init_subclass(self, *args, **kwargs):
         """
@@ -33,6 +31,9 @@ class CameraSpaceDragger(dragger_utils.Dragger):
         if self.camera is None:
             maya_utils.message("Unable to find camera", record_warning=False)
             raise ValueError("Unable to find camera")
+        # get camera matrix, this is all we really need
+        self.camera_current_position = OpenMaya.MMatrix(cmds.getAttr(f"{self.camera}.worldMatrix"))
+
         nodes = cmds.ls(selection=True)
         self.attributes = []
 
@@ -69,33 +70,25 @@ class CameraSpaceDragger(dragger_utils.Dragger):
             pre_offset_matrix = math_utils.calculate_matrix_difference(camera_pre_frame_matrix, pre_frame_matrix)
             next_offset_matrix = math_utils.calculate_matrix_difference(camera_next_frame_matrix, next_frame_matrix)
 
-            data = {"pre_frame_matrix": pre_offset_matrix, "next_frame_matrix": next_offset_matrix}
+            # calculate the offset relative to the cameras current position
+            relative_pre_matrix = pre_offset_matrix * self.camera_current_position
+            relative_next_position = next_offset_matrix * self.camera_current_position
+            lerped_matrix = math_utils.lerp_matrix(relative_pre_matrix,
+                                                   relative_next_position,
+                                                   self.DEFAULT_VALUE,
+                                                   *args, **kwargs)
+
+            data = {
+                "relative_pre_matrix": relative_pre_matrix,
+                "relative_next_position": relative_next_position,
+                "key_display_curve": self.draw_key_display_curve(relative_pre_matrix, relative_next_position),
+                "lerp_display_curve": self.draw_tween_display_curve(lerped_matrix, lerped_matrix)
+            }
             self.node_data[node] = data
 
             if len(self.node_data) == 0:
                 maya_utils.message("No nodes found to tween", record_warning=False)
                 raise ValueError("No nodes found to tween. Make sure there are keyframes to tween and transform attributes are keyable")
-                
-    def press(self, *args, **kwargs):
-        """
-        Press function to be overwritten by subclass
-        """
-        self.camera_current_position = OpenMaya.MMatrix(cmds.getAttr(f"{self.camera}.worldMatrix"))
-
-        # for now the curve only draws if there is one node selected to avoid heavy tween function
-        if len(self.node_data) == 1:
-            if self.key_display_curve is None:
-                for node in self.node_data:
-                    # get lerped matrix values
-                    relative_pre_matrix = self.node_data[node]["pre_frame_matrix"] * self.camera_current_position
-                    relative_next_position = self.node_data[node]["next_frame_matrix"] * self.camera_current_position
-                    self.draw_key_display_curve(relative_pre_matrix, relative_next_position)
-                    lerped_matrix = math_utils.lerp_matrix(relative_pre_matrix,
-                                                           relative_next_position,
-                                                           self.DEFAULT_VALUE,
-                                                           *args, **kwargs)
-                    self.draw_tween_display_curve(lerped_matrix, lerped_matrix)
-        return
         
     def drag(self, *args, **kwargs):
         """
@@ -103,17 +96,13 @@ class CameraSpaceDragger(dragger_utils.Dragger):
         """
         for node in self.node_data:
             # get lerped matrix values
-            relative_pre_matrix = self.node_data[node]["pre_frame_matrix"] * self.camera_current_position
-            relative_next_position = self.node_data[node]["next_frame_matrix"] * self.camera_current_position
-            
-            lerped_matrix = math_utils.lerp_matrix(relative_pre_matrix,
-                                                   relative_next_position,
+            lerped_matrix = math_utils.lerp_matrix(self.node_data[node]["relative_pre_matrix"],
+                                                   self.node_data[node]["relative_next_position"],
                                                    self.x,
                                                    *args, **kwargs)
             cmds.xform(node, matrix=lerped_matrix, ws=True)
             # update curve draw after object data is updated
-            if self.key_display_curve:
-                self.update_tween_display_curve(lerped_matrix)
+            self.update_tween_display_curve(self.node_data[node]["lerp_display_curve"], lerped_matrix)
             
     def draw_key_display_curve(self, matrix_a, matrix_b):
         """
@@ -123,32 +112,37 @@ class CameraSpaceDragger(dragger_utils.Dragger):
         b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
         vector_a = a_decomposed_matrix[0]
         vector_b = b_decomposed_matrix[0]
-        self.key_display_curve = curve_utils.TwoPointDisplayCurve()
-        self.key_display_curve.create(vector_a, vector_b)
+        curve = curve_utils.TwoPointDisplayCurve()
+        curve.create(vector_a, vector_b)
+        return curve
 
     def draw_tween_display_curve(self, matrix_a, matrix_b):
         a_decomposed_matrix = math_utils.decompose_position_matrix(matrix_a)
         b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
         vector_a = a_decomposed_matrix[0]
         vector_b = b_decomposed_matrix[0]
-        self.tween_display_curve = curve_utils.TwoPointDisplayCurve()
-        self.tween_display_curve.create(vector_a, vector_b, thickness=4, color=9)
+        curve = curve_utils.TwoPointDisplayCurve()
+        curve.create(vector_a, vector_b, thickness=4, color=9)
+        return curve
 
-    def update_tween_display_curve(self, matrix):
+    def update_tween_display_curve(self, curve, matrix):
         """
         I will only update 1 point
         """
         decomposed_matrix = math_utils.decompose_position_matrix(matrix)
         vector = decomposed_matrix[0]
-        self.tween_display_curve.move_points(None, vector)
+        curve.move_points(None, vector)
         
     def release(self, *args, **kwargs):
         """
         release function to be overwritten by subclass
         """
         try:
-            self.key_display_curve.delete()
-            self.tween_display_curve.delete()
+            for node in self.node_data:
+                position_curve = self.node_data[node]["key_display_curve"]
+                lerp_curve = self.node_data[node]["lerp_display_curve"]
+                position_curve.delete()
+                lerp_curve.delete()
         except Exception as e:
             return
 

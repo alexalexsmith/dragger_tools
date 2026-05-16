@@ -18,8 +18,6 @@ class LerpSnapDragger(dragger_utils.Dragger):
     CURSOR = "hand"
     DEFAULT_VALUE = 0.0
     ICON = f"{ICONS}/lerpsnapdragger.png"
-    position_display_curves = []
-    lerp_display_curves = []
 
     def __init__(self, *args, **kwargs):
         super(LerpSnapDragger, self).__init__(*args, **kwargs)
