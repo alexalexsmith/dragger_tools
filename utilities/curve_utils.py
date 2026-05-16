@@ -1,85 +1,100 @@
 """
 Utilities for building nurbs curves in maya 
 """
-import maya.OpenMaya as om
-import maya.cmds as cmds
+import maya.api.OpenMaya as om
 
 from dragger_tools.utilities import math_utils
 
 
 class TwoPointDisplayCurve(object):
     """
-    curve with 2 points, intended for displaying Information to the user
+    Curve with 2 points, intended for displaying information to the user.
+    Fully converted to OpenMaya 2.0.
     """
+
     def __init__(self):
-        self.dag_path = om.MDagPath()
+        self.dag_path = None
         self.curve = None
 
     def create(self, vector_a, vector_b, thickness=1, color=18):
+        # 1. Build points array
         points = om.MPointArray()
         points.append(om.MPoint(*vector_a))
         points.append(om.MPoint(*vector_b))
 
-        knots = om.MDoubleArray()
-        knots.append(0.0)
-        knots.append(1.0)
-
+        # 2. OpenMaya 2.0 list initialization for arrays
+        knots = om.MDoubleArray([0.0, 1.0])
         degree = 1
         form = om.MFnNurbsCurve.kOpen
         rational = False
 
+        # 3. Create the curve
         curve_fn = om.MFnNurbsCurve()
-        # Returns an MObject for the new curve
-        transform = curve_fn.create(points, knots, degree, form, rational, False)
-        self.dag_path = om.MDagPath()
-        fn_dag_node = om.MFnDagNode(transform)
-        fn_dag_node.getPath(self.dag_path)
+        transform_mobj = curve_fn.create(points, knots, degree, form, rational, False)
 
+        # 4. Correctly extract and assign the DAG Path in 2.0
+        fn_dag_node = om.MFnDagNode(transform_mobj)
+        self.dag_path = fn_dag_node.getPath()
         self.dag_path.extendToShape()
 
+        # 5. Initialize the curve function set on the shape path
         self.curve = om.MFnNurbsCurve(self.dag_path)
         self.set_curve_display(thickness=thickness, color=color)
 
     def set_curve_display(self, thickness=1, color=18):
         """
-        Set the curves thickness and color
+        Set the curve's thickness and viewport color override using pure OpenMaya 2.0.
         """
-        if not self.dag_path.isValid():
+        if self.dag_path is None or not self.dag_path.isValid():
             return
-        curve_name = self.dag_path.fullPathName()
-        cmds.setAttr(f"{curve_name}.lineWidth", thickness)
 
-        # 4. Apply Color via Display Overrides
-        cmds.setAttr(f"{curve_name}.overrideEnabled", 1)
-        cmds.setAttr(f"{curve_name}.overrideRGBColors", 0)  # Use Index colors
-        cmds.setAttr(f"{curve_name}.overrideColor", color)
+        curve_obj = self.dag_path.node()
+        dep_fn = om.MFnDependencyNode(curve_obj)
+
+        line_width_plug = dep_fn.findPlug("lineWidth", False)
+        line_width_plug.setFloat(float(thickness))
+
+        override_enabled_plug = dep_fn.findPlug("overrideEnabled", False)
+        override_enabled_plug.setInt(1)
+
+        override_rgb_plug = dep_fn.findPlug("overrideRGBColors", False)
+        override_rgb_plug.setInt(0)  # 0 = Index colors, 1 = RGB colors
+
+        override_color_plug = dep_fn.findPlug("overrideColor", False)
+        override_color_plug.setInt(color)
 
     def move_points(self, vector_a, vector_b):
-        if not self.dag_path.isValid():
+        """
+        Dynamically update positions of start and end points.
+        """
+        if self.curve is None or not self.dag_path.isValid():
             return
-        # Get existing points
-        points = om.MPointArray()
-        self.curve.getCVs(points, om.MSpace.kWorld)
+
+        points = self.curve.cvPositions(om.MSpace.kWorld)
 
         if vector_a is not None:
-            points.set(om.MPoint(*vector_a), 0)
+            points[0] = om.MPoint(*vector_a)
         if vector_b is not None:
-            points.set(om.MPoint(*vector_b), 1)
+            points[1] = om.MPoint(*vector_b)
 
-        self.curve.setCVs(points, om.MSpace.kWorld)
-        # Tell Maya to redraw the curve in the viewport
+        self.curve.setCVPositions(points, om.MSpace.kWorld)
         self.curve.updateCurve()
 
     def delete(self):
-        if not self.dag_path.isValid():
+        """
+        Cleans up the curve nodes from the scene dependency graph.
+        """
+        if self.dag_path is None or not self.dag_path.isValid():
             return
-        transform_path = om.MDagPath(self.dag_path)
-        transform_path.pop()  # Step up from shape to transform
-        transform_mobj = transform_path.node()
 
+        fn_dag_node = om.MFnDagNode(self.dag_path)
+        transform_mobj = fn_dag_node.parent(0)
+
+        # Clear references
         self.curve = None
-        self.dag_path = om.MDagPath()
+        self.dag_path = None
 
+        # Delete the transform node via DAG modifier
         dag_mod = om.MDagModifier()
         dag_mod.deleteNode(transform_mobj)
         dag_mod.doIt()
@@ -124,4 +139,3 @@ class LerpVectorDisplayCurves(object):
             self.lerp_curve.delete()
         except Exception as e:
             return e
-        
