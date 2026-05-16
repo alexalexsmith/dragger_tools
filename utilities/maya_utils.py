@@ -9,7 +9,9 @@ import maya.api.OpenMaya as OpenMaya
 from maya import cmds, mel
 
 
+def record_error(function, error, *args, **kwargs):
     """
+    records a clean error message in the maya terminal with details for troubleshooting
     :param function: function that caused issue
     :param error: error message
     """
@@ -26,6 +28,7 @@ from maya import cmds, mel
     return
 
 
+def message(msg, position='midCenterTop', record_warning=True, drag_kill=False, *args, **kwargs):
     """
     A nicer way to display messages to the user
     :param str msg: text to display to user
@@ -42,12 +45,14 @@ from maya import cmds, mel
                             "botCenter"
                             "botRight"
     :param bool record_warning: Option to record the warning in the script output
+    :param bool drag_kill: Option to have drag kill the warning
     """
     if record_warning:
         OpenMaya.MGlobal.displayWarning(msg)
     else:
         OpenMaya.MGlobal.displayInfo(msg)
     fade_time = min(len(msg) * 100, 2000)
+    cmds.inViewMessage(amg=msg, pos=position, fade=True, fadeStayTime=fade_time, dragKill=drag_kill)
 
 
 def get_current_camera():

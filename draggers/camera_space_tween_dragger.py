@@ -4,7 +4,7 @@ Camera depth dragger
 from maya import cmds
 from maya.api import OpenMaya
 
-from dragger_tools.utilities import maya_utils, math_utils, dragger_utils, attribute_utils, curve_utils
+from dragger_tools.utilities import maya_utils, math_utils, dragger_utils, curve_utils
 from dragger_tools import ICONS
 
 
@@ -21,7 +21,8 @@ class CameraSpaceDragger(dragger_utils.Dragger):
 
     def __init__(self, *args, **kwargs):
         super(CameraSpaceDragger, self).__init__(*args, **kwargs)
-        self.curve = None
+        self.key_display_curve = None
+        self.tween_display_curve = None
 
     def _init_subclass(self, *args, **kwargs):
         """
@@ -29,6 +30,9 @@ class CameraSpaceDragger(dragger_utils.Dragger):
         """
         # get the camera that we're looking through, and the objects selected
         self.camera = maya_utils.get_current_camera()
+        if self.camera is None:
+            maya_utils.message("Unable to find camera", record_warning=False)
+            raise ValueError("Unable to find camera")
         nodes = cmds.ls(selection=True)
         self.attributes = []
 
@@ -77,14 +81,20 @@ class CameraSpaceDragger(dragger_utils.Dragger):
         Press function to be overwritten by subclass
         """
         self.camera_current_position = OpenMaya.MMatrix(cmds.getAttr(f"{self.camera}.worldMatrix"))
-        
-        if len(self.node_data) ==1:
-            if self.curve is None:
+
+        # for now the curve only draws if there is one node selected to avoid heavy tween function
+        if len(self.node_data) == 1:
+            if self.key_display_curve is None:
                 for node in self.node_data:
                     # get lerped matrix values
                     relative_pre_matrix = self.node_data[node]["pre_frame_matrix"] * self.camera_current_position
                     relative_next_position = self.node_data[node]["next_frame_matrix"] * self.camera_current_position
-                    self.draw_tween_points(relative_pre_matrix, relative_next_position)
+                    self.draw_key_display_curve(relative_pre_matrix, relative_next_position)
+                    lerped_matrix = math_utils.lerp_matrix(relative_pre_matrix,
+                                                           relative_next_position,
+                                                           self.DEFAULT_VALUE,
+                                                           *args, **kwargs)
+                    self.draw_tween_display_curve(lerped_matrix, lerped_matrix)
         return
         
     def drag(self, *args, **kwargs):
@@ -101,27 +111,46 @@ class CameraSpaceDragger(dragger_utils.Dragger):
                                                    self.x,
                                                    *args, **kwargs)
             cmds.xform(node, matrix=lerped_matrix, ws=True)
+            # update curve draw after object data is updated
+            if self.key_display_curve:
+                self.update_tween_display_curve(lerped_matrix)
             
-    def draw_tween_points(self, matrix_a, matrix_b):
+    def draw_key_display_curve(self, matrix_a, matrix_b):
         """
+        Initiate a curve to illustrate tween data
         """
-        a = OpenMaya.MMatrix(matrix_a)
-        b = OpenMaya.MMatrix(matrix_b)
-        a_decomposed_matrix = math_utils.decompose_position_matrix(a)
-        b_decomposed_matrix = math_utils.decompose_position_matrix(b)
+        a_decomposed_matrix = math_utils.decompose_position_matrix(matrix_a)
+        b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
         vector_a = a_decomposed_matrix[0]
         vector_b = b_decomposed_matrix[0]
-        self.curve = curve_utils.create_two_point_curve(vector_a, vector_b)
+        self.key_display_curve = curve_utils.TwoPointDisplayCurve()
+        self.key_display_curve.create(vector_a, vector_b)
+
+    def draw_tween_display_curve(self, matrix_a, matrix_b):
+        a_decomposed_matrix = math_utils.decompose_position_matrix(matrix_a)
+        b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
+        vector_a = a_decomposed_matrix[0]
+        vector_b = b_decomposed_matrix[0]
+        self.tween_display_curve = curve_utils.TwoPointDisplayCurve()
+        self.tween_display_curve.create(vector_a, vector_b, thickness=4, color=9)
+
+    def update_tween_display_curve(self, matrix):
+        """
+        I will only update 1 point
+        """
+        decomposed_matrix = math_utils.decompose_position_matrix(matrix)
+        vector = decomposed_matrix[0]
+        self.tween_display_curve.move_points(None, vector)
         
     def release(self, *args, **kwargs):
         """
         release function to be overwritten by subclass
         """
         try:
-            curve_utils.delete_m_object(self.curve)
+            self.key_display_curve.delete()
+            self.tween_display_curve.delete()
         except Exception as e:
             return
-        
 
 
 def drag(*args, **kwargs):
