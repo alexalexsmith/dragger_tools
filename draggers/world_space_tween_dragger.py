@@ -81,7 +81,6 @@ class WSTweenDragger(dragger_utils.Dragger):
                                                    *args, **kwargs)
             cmds.xform(node, matrix=lerped_matrix, ws=True)
 
-
 def drag(*args, **kwargs):
     """
     main drag function. sets the drag tool

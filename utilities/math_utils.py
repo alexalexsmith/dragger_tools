@@ -105,5 +105,16 @@ def recompose_position_matrix(translation, rotation, scale, shear):
     recomposed_position_transform.setScale(scale, OpenMaya.MSpace.kWorld)
     recomposed_position_transform.setShear(shear, OpenMaya.MSpace.kTransform)
 
-    recoupled_position_matrix = recomposed_position_transform.asMatrix()
-    return recoupled_position_matrix
+    recomposed_position_matrix = recomposed_position_transform.asMatrix()
+    return recomposed_position_matrix
+
+
+def calculate_matrix_difference(matrix_a, matrix_b):
+    """
+    calculate the offset matrix
+    :param matrix_a:
+    :param matrix_b:
+    :return: offset_matrix
+    """
+    offset_mmatrix = matrix_b * matrix_a.inverse()
+    return offset_mmatrix
