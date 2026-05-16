@@ -35,41 +35,13 @@ class LerpSnapDragger(dragger_utils.Dragger):
         self.snap_node_matrix = OpenMaya.MMatrix(cmds.xform(nodes[0], query=True, matrix=True, ws=True))
         self.node_data = {}
         for node in nodes:
-            node_data = {}
             node_matrix = OpenMaya.MMatrix(cmds.xform(node, query=True, matrix=True, ws=True))
-            node_data["matrix"] = node_matrix
-            node_data["position_display_curve"] = self.draw_key_display_curve(self.snap_node_matrix, node_matrix)
-            node_data["lerp_display_curve"] = self.draw_tween_display_curve(node_matrix, node_matrix)
+            display_curves = curve_utils.LerpVectorDisplayCurves(node_matrix, self.snap_node_matrix, node_matrix)
+            node_data = {
+                "matrix": node_matrix,
+                "display_curves": display_curves
+            }
             self.node_data[node] = node_data
-
-    def draw_key_display_curve(self, matrix_a, matrix_b):
-        """
-        Initiate a curve to illustrate tween data
-        """
-        a_decomposed_matrix = math_utils.decompose_position_matrix(matrix_a)
-        b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
-        vector_a = a_decomposed_matrix[0]
-        vector_b = b_decomposed_matrix[0]
-        curve = curve_utils.TwoPointDisplayCurve()
-        curve.create(vector_a, vector_b)
-        return curve
-
-    def draw_tween_display_curve(self, matrix_a, matrix_b):
-        a_decomposed_matrix = math_utils.decompose_position_matrix(matrix_a)
-        b_decomposed_matrix = math_utils.decompose_position_matrix(matrix_b)
-        vector_a = a_decomposed_matrix[0]
-        vector_b = b_decomposed_matrix[0]
-        curve = curve_utils.TwoPointDisplayCurve()
-        curve.create(vector_a, vector_b, thickness=4, color=9)
-        return curve
-
-    def update_tween_display_curve(self, curve, matrix):
-        """
-        I will only update 1 point
-        """
-        decomposed_matrix = math_utils.decompose_position_matrix(matrix)
-        vector = decomposed_matrix[0]
-        curve.move_points(None, vector)
 
     def drag(self, *args, **kwargs):
         """
@@ -82,7 +54,8 @@ class LerpSnapDragger(dragger_utils.Dragger):
                                                    self.x,
                                                    *args, **kwargs)
             cmds.xform(node, matrix=lerped_matrix, ws=True)
-            self.update_tween_display_curve(self.node_data[node]["lerp_display_curve"], lerped_matrix)
+            display_curves = self.node_data[node]["display_curves"]
+            display_curves.update_lerp_curve(lerped_matrix)
 
     def release(self, *args, **kwargs):
         """
@@ -90,10 +63,8 @@ class LerpSnapDragger(dragger_utils.Dragger):
         """
         for node in self.node_data:
             try:
-                position_curve = self.node_data[node]["position_display_curve"]
-                lerp_curve = self.node_data[node]["lerp_display_curve"]
-                position_curve.delete()
-                lerp_curve.delete()
+                display_curves = self.node_data[node]["display_curves"]
+                display_curves.delete_curves()
             except Exception as e:
                 return
 
