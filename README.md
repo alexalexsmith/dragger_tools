@@ -21,6 +21,16 @@ lerp (ease) world position between previous and next keyframe time world positio
 from dragger_tools.draggers import world_space_tween_dragger;world_space_tween_dragger.drag(translation=True, rotation=True, scale=True)
 ```
 
+## Camera Space Tween Dragger
+<img width="720" height="720" alt="camera_space_dragger" src="https://github.com/user-attachments/assets/9f2b1689-ba46-4141-b776-ad6ba98318f0" />
+
+lerp (ease) position between previous and next keyframe time relative to active camera positions. This function allows you to choose to exclude translation, rotation, and scale
+
+```
+from dragger_tools.draggers import camera_space_tween_dragger;camera_space_tween_dragger.drag(translation=True, rotation=True, scale=True)
+```
+
+
 ## Default Tween Dragger
 <img width="720" height="720" alt="default_tween_dragger" src="https://github.com/user-attachments/assets/c931b687-1a00-4782-90da-7814fafd5e93" />
 
