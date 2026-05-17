@@ -2,7 +2,7 @@
 Utilities for managing attributes
 """
 from maya import cmds
-import maya.api.OpenMaya as om
+from maya.api import OpenMaya
 
 
 class Attribute(object):
@@ -22,10 +22,10 @@ class Attribute(object):
 
     def _init_m_attribute(self):
         """initiate the openMaya attribute object"""
-        sel = om.MSelectionList()
+        sel = OpenMaya.MSelectionList()
         sel.add(self.node)
         mobj = sel.getDependNode(0)
-        self.fn_node = om.MFnDependencyNode(mobj)
+        self.fn_node = OpenMaya.MFnDependencyNode(mobj)
         self.m_attr_plug = self.fn_node.findPlug(self.attribute, False)
         self.m_attribute = self.m_attr_plug.attribute()
 
@@ -68,19 +68,19 @@ class Attribute(object):
         if m_plug_source.isNull:
             return None
         m_object_source_node = m_plug_source.node()
-        fn_source_node = om.MFnDependencyNode(m_object_source_node)
+        fn_source_node = OpenMaya.MFnDependencyNode(m_object_source_node)
         return fn_source_node.name()
 
     def get_default_value(self):
         """
         return the default value.
         """
-        if self.m_attribute.hasFn(om.MFn.kNumericAttribute):
-            return om.MFnNumericAttribute(self.m_attribute).default
-        elif self.m_attribute.hasFn(om.MFn.kEnumAttribute):
-            return om.MFnEnumAttribute(self.m_attribute).default
-        elif self.m_attribute.hasFn(om.MFn.kTypedAttribute):
-            return om.MFnTypedAttribute(self.m_attribute).default
+        if self.m_attribute.hasFn(OpenMaya.MFn.kNumericAttribute):
+            return OpenMaya.MFnNumericAttribute(self.m_attribute).default
+        elif self.m_attribute.hasFn(OpenMaya.MFn.kEnumAttribute):
+            return OpenMaya.MFnEnumAttribute(self.m_attribute).default
+        elif self.m_attribute.hasFn(OpenMaya.MFn.kTypedAttribute):
+            return OpenMaya.MFnTypedAttribute(self.m_attribute).default
         else:
             return 0  # NOTE: default value for translation and rotation attributes
 

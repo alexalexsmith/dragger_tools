@@ -14,7 +14,7 @@ class CameraSpaceDragger(dragger_utils.Dragger):
     """
     NAME = "Camera Space Dragger"
     TITLE = "Camera Space Dragger"
-    CURSOR = "track"
+    CURSOR = "hand"
     DEFAULT_VALUE = 0.5
     ICON = f"{ICONS}/cameraspacedragger.png"
     TRANSFORM_ATTRIBUTES = ["tx", "ty", "tz", "rx", "ry", "rz", "sx", "sy", "sz"]

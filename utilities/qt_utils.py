@@ -1,19 +1,20 @@
 try:
     from PySide2 import QtWidgets, QtCore, QtGui
-    from shiboken2 import wrapInstance
 except ModuleNotFoundError:
     from PySide6 import QtWidgets, QtCore, QtGui
-    from shiboken6 import wrapInstance
-
-import maya.OpenMayaUI as omui
 
 
 def get_maya_main_widget():
     """
-    Get pointer to Maya's main window
+    Get Maya's main window using pure PySide (No MQtUtil required).
     """
-    maya_main_window_pointer = omui.MQtUtil.mainWindow()
-    return wrapInstance(int(maya_main_window_pointer), QtWidgets.QWidget)
+    app = QtWidgets.QApplication.instance()
+
+    for widget in app.topLevelWidgets():
+        if widget.objectName() == "MayaWindow":
+            return widget
+
+    return None
 
 
 class CursorLabel(QtWidgets.QLabel):

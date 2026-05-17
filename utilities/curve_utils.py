@@ -1,7 +1,7 @@
 """
 Utilities for building nurbs curves in maya 
 """
-import maya.api.OpenMaya as om
+from maya.api import OpenMaya
 
 from dragger_tools.utilities import math_utils
 
@@ -9,7 +9,6 @@ from dragger_tools.utilities import math_utils
 class TwoPointDisplayCurve(object):
     """
     Curve with 2 points, intended for displaying information to the user.
-    Fully converted to OpenMaya 2.0.
     """
 
     def __init__(self):
@@ -17,39 +16,40 @@ class TwoPointDisplayCurve(object):
         self.curve = None
 
     def create(self, vector_a, vector_b, thickness=1, color=18):
-        # 1. Build points array
-        points = om.MPointArray()
-        points.append(om.MPoint(*vector_a))
-        points.append(om.MPoint(*vector_b))
+        """
+        Create a curve node with 2 points
+        """
+        points = OpenMaya.MPointArray()
+        points.append(OpenMaya.MPoint(*vector_a))
+        points.append(OpenMaya.MPoint(*vector_b))
 
-        # 2. OpenMaya 2.0 list initialization for arrays
-        knots = om.MDoubleArray([0.0, 1.0])
+        knots = OpenMaya.MDoubleArray([0.0, 1.0])
         degree = 1
-        form = om.MFnNurbsCurve.kOpen
+        form = OpenMaya.MFnNurbsCurve.kOpen
         rational = False
 
-        # 3. Create the curve
-        curve_fn = om.MFnNurbsCurve()
+        curve_fn = OpenMaya.MFnNurbsCurve()
         transform_mobj = curve_fn.create(points, knots, degree, form, rational, False)
 
-        # 4. Correctly extract and assign the DAG Path in 2.0
-        fn_dag_node = om.MFnDagNode(transform_mobj)
+        fn_dag_node = OpenMaya.MFnDagNode(transform_mobj)
         self.dag_path = fn_dag_node.getPath()
         self.dag_path.extendToShape()
 
-        # 5. Initialize the curve function set on the shape path
-        self.curve = om.MFnNurbsCurve(self.dag_path)
+        self.curve = OpenMaya.MFnNurbsCurve(self.dag_path)
         self.set_curve_display(thickness=thickness, color=color)
 
     def set_curve_display(self, thickness=1, color=18):
         """
-        Set the curve's thickness and viewport color override using pure OpenMaya 2.0.
+        Set the curve's thickness and viewport color override
         """
         if self.dag_path is None or not self.dag_path.isValid():
             return
 
         curve_obj = self.dag_path.node()
-        dep_fn = om.MFnDependencyNode(curve_obj)
+        dep_fn = OpenMaya.MFnDependencyNode(curve_obj)
+
+        hidden_plug = dep_fn.findPlug("hiddenInOutliner", False)
+        hidden_plug.setBool(True)
 
         line_width_plug = dep_fn.findPlug("lineWidth", False)
         line_width_plug.setFloat(float(thickness))
@@ -70,14 +70,14 @@ class TwoPointDisplayCurve(object):
         if self.curve is None or not self.dag_path.isValid():
             return
 
-        points = self.curve.cvPositions(om.MSpace.kWorld)
+        points = self.curve.cvPositions(OpenMaya.MSpace.kWorld)
 
         if vector_a is not None:
-            points[0] = om.MPoint(*vector_a)
+            points[0] = OpenMaya.MPoint(*vector_a)
         if vector_b is not None:
-            points[1] = om.MPoint(*vector_b)
+            points[1] = OpenMaya.MPoint(*vector_b)
 
-        self.curve.setCVPositions(points, om.MSpace.kWorld)
+        self.curve.setCVPositions(points, OpenMaya.MSpace.kWorld)
         self.curve.updateCurve()
 
     def delete(self):
@@ -87,7 +87,7 @@ class TwoPointDisplayCurve(object):
         if self.dag_path is None or not self.dag_path.isValid():
             return
 
-        fn_dag_node = om.MFnDagNode(self.dag_path)
+        fn_dag_node = OpenMaya.MFnDagNode(self.dag_path)
         transform_mobj = fn_dag_node.parent(0)
 
         # Clear references
@@ -95,7 +95,7 @@ class TwoPointDisplayCurve(object):
         self.dag_path = None
 
         # Delete the transform node via DAG modifier
-        dag_mod = om.MDagModifier()
+        dag_mod = OpenMaya.MDagModifier()
         dag_mod.deleteNode(transform_mobj)
         dag_mod.doIt()
 

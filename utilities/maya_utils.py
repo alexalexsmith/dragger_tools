@@ -5,8 +5,8 @@ Common maya functions to reduce redundancies or forcing everything to be include
 import inspect
 import sys
 
-import maya.api.OpenMaya as OpenMaya
-from maya import cmds, mel
+from maya.api import OpenMaya
+from maya import cmds
 
 
 def record_error(function, error, *args, **kwargs):
