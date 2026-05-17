@@ -33,6 +33,7 @@ class TweenDragger(dragger_utils.Dragger):
 
         self.attributes = None
         self.attribute_data = {}
+        selected_attributes = cmds.channelBox('mainChannelBox', query=True, selectedMainAttributes=True)
         for node in nodes:
             self.attributes = cmds.listAttr(node, keyable=True, unlocked=True, shortNames=True)
             # skipping node if no animatable attributes are available
@@ -40,6 +41,9 @@ class TweenDragger(dragger_utils.Dragger):
                 continue
 
             for attribute in self.attributes:
+                if selected_attributes:
+                    if attribute not in selected_attributes:
+                        continue
 
                 previous_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="previous")
                 next_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="next")

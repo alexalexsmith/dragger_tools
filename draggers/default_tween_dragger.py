@@ -33,6 +33,7 @@ class DefaultTweenDragger(dragger_utils.Dragger):
 
         self.attributes = None
         self.attribute_data = {}
+        selected_attributes = cmds.channelBox('mainChannelBox', query=True, selectedMainAttributes=True)
         for node in nodes:
             self.attributes = cmds.listAttr(node, keyable=True, unlocked=True, shortNames=True)
             # skipping node if no animatable attributes are available
@@ -40,6 +41,9 @@ class DefaultTweenDragger(dragger_utils.Dragger):
                 continue
 
             for attribute in self.attributes:
+                if selected_attributes:
+                    if attribute not in selected_attributes:
+                        continue
 
                 previous_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="previous")
                 next_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="next")
@@ -48,6 +52,8 @@ class DefaultTweenDragger(dragger_utils.Dragger):
                 if not next_keyframe:
                     continue
 
+                # TODO: if additive animlayer is selected we need to get the curve value not the attribute value
+                # TODO: also we will need to manipulate the curve value not the attribute value in the drag func
                 as_attribute = attribute_utils.Attribute(f"{node}.{attribute}")
                 default_value = as_attribute.get_default_value()
                 current_value = as_attribute.value

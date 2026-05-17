@@ -84,3 +84,28 @@ def get_current_camera():
         return cam_shape
     elif cmds.nodeType(cam_shape) in ['camera', 'stereoRigCamera']:
         return cmds.listRelatives(cam_shape, parent=True, path=True)[0]
+
+
+def get_active_animation_layer_cmds():
+    """
+    Returns the name of the currently active animation layer using maya.cmds.
+    """
+    node_iter = OpenMaya.MItDependencyNodes(OpenMaya.MFn.kAnimLayer)
+
+    base_layer = None
+
+    while not node_iter.isDone():
+        mobject = node_iter.thisNode()
+        dep_node = OpenMaya.MFnDependencyNode(mobject)
+
+        # Keep track of the node name
+        layer_name = dep_node.name()
+
+        if layer_name == "BaseAnimation":
+            base_layer = layer_name
+
+        if cmds.animLayer(layer_name, query=True, selected=True):
+            return layer_name
+        node_iter.next()
+
+    return base_layer

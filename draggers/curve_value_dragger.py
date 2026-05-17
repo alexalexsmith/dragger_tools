@@ -53,12 +53,12 @@ class CurveValueDragger(dragger_utils.Dragger):
                 if not cmds.nodeType(source_connection) in ANIM_CURVE_TYPES:
                     continue
                 buffer_curve = cmds.duplicate(source_connection)[0]
-                sel = OpenMaya.MSelectionList()
-                sel.add(buffer_curve)
-                new_obj = sel.getDependNode(0)
-                fn_curve = OpenMayaAnim.MFnAnimCurve(new_obj)
+                #sel = OpenMaya.MSelectionList()
+                #sel.add(buffer_curve)
+                #new_obj = sel.getDependNode(0)
+                #fn_curve = OpenMayaAnim.MFnAnimCurve(new_obj)
 
-                self.nodes[node][f"{node}.{attribute}"] = fn_curve
+                self.nodes[node][f"{node}.{attribute}"] = buffer_curve
 
     def press(self, *args, **kwargs):
         """
@@ -85,10 +85,11 @@ class CurveValueDragger(dragger_utils.Dragger):
         for node in self.nodes:
             for attribute in self.nodes[node]:
                 buffer_curve = self.nodes[node][attribute]
+                value = cmds.keyframe(buffer_curve, query=True, eval=True, time=(self.time_drag, self.time_drag))[0]
                 cmds.keyframe(
                     attribute,
                     time=(cmds.currentTime(query=True),),
-                    valueChange=buffer_curve.evaluate(OpenMaya.MTime(self.time_drag, OpenMaya.MTime.uiUnit()))
+                    valueChange=value
                 )
 
     def release(self):
@@ -96,9 +97,10 @@ class CurveValueDragger(dragger_utils.Dragger):
         for node in self.nodes:
             for attribute in self.nodes[node]:
                 buffer_curve = self.nodes[node][attribute]
-                dg_mod = OpenMaya.MDGModifier()
-                dg_mod.deleteNode(buffer_curve.object())
-                dg_mod.doIt()  # There is no try
+                cmds.delete(buffer_curve)
+                #dg_mod = OpenMaya.MDGModifier()
+                #dg_mod.deleteNode(buffer_curve.object())
+                #dg_mod.doIt()  # There is no try
 
 
 def drag(*args, **kwargs):
