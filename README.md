@@ -7,14 +7,14 @@
 <img width="32" height="32" alt="curvevaluedragger" src="https://github.com/user-attachments/assets/24afacbb-8ee6-4419-9658-f8cfaa7f3c72" />
 <img width="34" height="34" alt="cameraspacedragger" src="https://github.com/user-attachments/assets/5e14407c-21dc-405a-a97a-4da3682c899b" />
 <img width="34" height="34" alt="cameradepthdragger" src="https://github.com/user-attachments/assets/10b14776-decc-41d4-b295-48d47fac1d25" />
+
 dragger tools for maya
 
 place the dragger_tools folder in your scripts folder and run the dragger tool with the below commands. Use the drag_and_drop_install_shelve_buttons.py to add the buttons to your current shelf
 The tools work by left mouse click and dragging across the viewport. You can lock the drag value to avoid overshooting using the ctrl key and reduce the drag speed using the alt key.
 
 ## Tween Dragger
-<img width="720" height="720" alt="tween_dragger" src="https://github.com/user-attachments/assets/26f00c16-f5a1-44eb-9fae-506fecf1a2f2" />
-
+<img width="32" height="32" alt="tweendragger" src="https://github.com/user-attachments/assets/8f7efd50-855d-4f18-a16b-b208b6cf8d7f" />
 lerp (ease) attributes between previous and next keyframe values
 
 ```
