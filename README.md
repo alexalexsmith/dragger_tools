@@ -15,6 +15,7 @@ The tools work by left mouse click and dragging across the viewport. You can loc
 
 ## Tween Dragger <img width="32" height="32" alt="tweendragger" src="https://github.com/user-attachments/assets/8f7efd50-855d-4f18-a16b-b208b6cf8d7f" />
 <img width="720" height="720" alt="tween_dragger" src="https://github.com/user-attachments/assets/26f00c16-f5a1-44eb-9fae-506fecf1a2f2" />
+
 lerp (ease) attributes between previous and next keyframe values
 
 ```
