@@ -165,7 +165,7 @@ class Dragger(object):
         """
         defines what is displayed on the cursor label and how it looks when dragging
         """
-        label = f"{int(self.x * 100)}%"
+        label = "{}%".format(int(self.x * 100))
         self.cursor_label.setText(label)
         if int(self.x * 100) > 100 or int(self.x * 100) < 0:
             self.cursor_label.set_color("red")
