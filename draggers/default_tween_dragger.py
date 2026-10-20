@@ -1,11 +1,17 @@
+
 """
-default tween dragger
+Default tween dragger
 """
 from maya import cmds
-from maya.api import OpenMaya
 
-from dragger_tools.utilities import maya_utils, math_utils, dragger_utils, attribute_utils
+from dragger_tools.utilities import (
+    maya_utils,
+    math_utils,
+    dragger_utils,
+    attribute_utils
+)
 from dragger_tools import ICONS
+import os
 
 
 class DefaultTweenDragger(dragger_utils.Dragger):
@@ -16,82 +22,115 @@ class DefaultTweenDragger(dragger_utils.Dragger):
     TITLE = "Default Tween Dragger"
     CURSOR = "hand"
     DEFAULT_VALUE = 0.5
-    ICON = f"{ICONS}/defaulttweendragger.png"
+    ICON = os.path.join(ICONS, "defaulttweendragger.png")
 
     def __init__(self, *args, **kwargs):
         super(DefaultTweenDragger, self).__init__(*args, **kwargs)
 
     def _init_subclass(self, *args, **kwargs):
         """
-        init the dragger tool data
+        Initialize the dragger tool data.
         """
         nodes = cmds.ls(selection=True)
 
-        if nodes is None or len(nodes) == 0:
-            maya_utils.message("0 nodes selected", position='midCenterTop', record_warning=False)
+        if not nodes:
+            maya_utils.message(
+                "0 nodes selected",
+                position="midCenterTop",
+                record_warning=False
+            )
             raise ValueError("0 transform nodes selected")
 
-        self.attributes = None
+        self.attributes = []
         self.attribute_data = {}
-        selected_attributes = cmds.channelBox('mainChannelBox', query=True, selectedMainAttributes=True)
+
+        selected_attributes = cmds.channelBox(
+            "mainChannelBox",
+            query=True,
+            selectedMainAttributes=True
+        )
+
         for node in nodes:
-            self.attributes = cmds.listAttr(node, keyable=True, unlocked=True, shortNames=True)
-            # skipping node if no animatable attributes are available
-            if not self.attributes or len(self.attributes) == 0:
+            attributes = cmds.listAttr(
+                node,
+                keyable=True,
+                unlocked=True,
+                shortNames=True
+            )
+
+            # Skip nodes with no animatable attributes.
+            if not attributes:
                 continue
 
-            for attribute in self.attributes:
-                if selected_attributes:
-                    if attribute not in selected_attributes:
-                        continue
-
-                previous_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="previous")
-                next_keyframe = cmds.findKeyframe(f"{node}.{attribute}", which="next")
-                if not previous_keyframe:
-                    continue
-                if not next_keyframe:
+            for attribute in attributes:
+                if selected_attributes and attribute not in selected_attributes:
                     continue
 
-                # TODO: if additive animlayer is selected we need to get the curve value not the attribute value
-                # TODO: also we will need to manipulate the curve value not the attribute value in the drag func
-                as_attribute = attribute_utils.Attribute(f"{node}.{attribute}")
+                attribute_path = "{0}.{1}".format(node, attribute)
+
+                previous_keyframe = cmds.findKeyframe(
+                    attribute_path,
+                    which="previous"
+                )
+                next_keyframe = cmds.findKeyframe(
+                    attribute_path,
+                    which="next"
+                )
+
+                if previous_keyframe is None or next_keyframe is None:
+                    continue
+
+                # TODO: For additive animation layers, retrieve and manipulate
+                # the animation curve value rather than the attribute value.
+                as_attribute = attribute_utils.Attribute(attribute_path)
+
                 default_value = as_attribute.get_default_value()
                 current_value = as_attribute.value
 
-                data = {"default_value": default_value, "current_value": current_value}
-                self.attribute_data[f"{node}.{attribute}"] = data
+                self.attribute_data[attribute_path] = {
+                    "default_value": default_value,
+                    "current_value": current_value
+                }
+                self.attributes.append(attribute_path)
 
-        if not self.attributes or len(self.attributes) == 0:
-            maya_utils.message("No attributes found to tween", position='midCenterTop', record_warning=False)
+        if not self.attribute_data:
+            maya_utils.message(
+                "No attributes found to tween",
+                position="midCenterTop",
+                record_warning=False
+            )
             raise ValueError("No attributes found to tween")
 
     def press(self, *args, **kwargs):
         """
-        Actions taking place on press action
+        Actions taking place on press action.
         """
-        # set keyframe will set a keyframe on all attributes
-        cmds.setKeyframe()
+        # Set a keyframe on the selected attributes.
+        if self.attribute_data:
+            cmds.setKeyframe(list(self.attribute_data.keys()))
 
     def drag(self, *args, **kwargs):
         """
-        Actions activated by left drag
+        Actions activated by left drag.
         """
-        for attribute in self.attribute_data:
+        current_time = cmds.currentTime(query=True)
+
+        for attribute, data in self.attribute_data.items():
+            value = math_utils.lerp(
+                data["default_value"],
+                data["current_value"],
+                self.x
+            )
+
             cmds.keyframe(
                 attribute,
-                time=(cmds.currentTime(query=True),),
-                valueChange=math_utils.lerp(
-                    self.attribute_data[attribute]["default_value"],
-                    self.attribute_data[attribute]["current_value"],
-                    self.x)
+                time=(current_time,),
+                valueChange=value
             )
 
 
 def drag(*args, **kwargs):
     """
-    main drag function. sets the drag tool
-    :param args:
-    :param kwargs:
-    :return:
+    Main drag function. Sets the drag tool.
     """
     DefaultTweenDragger(*args, **kwargs)
